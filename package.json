@@ -2,6 +2,7 @@
   "name": "bookstore-api-playwright",
   "version": "1.0.0",
   "scripts": {
+    "start": "node server.js",
     "test": "playwright test",
     "report": "allure generate allure-results --clean && allure open"
   },
