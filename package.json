@@ -1,0 +1,14 @@
+{
+  "name": "bookstore-api-playwright",
+  "version": "1.0.0",
+  "scripts": {
+    "test": "playwright test",
+     "report": "allure generate allure-results --clean && allure open"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.53.1",
+    "allure-playwright": "^2.15.1",
+    "dotenv": "^16.5.0",
+    "playwright": "^1.39.0"
+  }
+}
