@@ -20,5 +20,10 @@ jobs:
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps
 
-      - name: Run tests
+      - name: Start API Server
+        run: |
+          npm run start &    # or whatever your start command is
+          sleep 5            # give server time to start
+
+      - name: Run Playwright API tests
         run: npx playwright test
