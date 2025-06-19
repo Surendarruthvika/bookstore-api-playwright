@@ -7,6 +7,9 @@ let token;
 let newBookId;
 
 test.beforeAll(async ({ request }) => {
+  // ⏳ Wait for FastAPI server to be ready (2 seconds)
+  await new Promise((res) => setTimeout(res, 2000));
+
   // Sign up - optional
   await request.post(`${baseUrl}/signup`, {
     data: {
@@ -55,7 +58,6 @@ test.describe('Bookstore API Tests', () => {
     expect(data.title).toBe("Playwright Guide");
   });
 
-  // ✅ NEW: Update the book
   test('PUT /books/:id - should update the book', async ({ request }) => {
     const res = await request.put(`${baseUrl}/books/${newBookId}`, {
       headers: {
