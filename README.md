@@ -33,7 +33,7 @@ This project provides a complete test automation suite for a Bookstore API using
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/your-username/bookstore-api-playwright.git
+git https://github.com/Surendarruthvika/bookstore-api-playwright.git
 cd bookstore-api-playwright
 ```
 
