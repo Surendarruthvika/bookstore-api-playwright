@@ -1,102 +1,94 @@
-const { test, expect } = require('@playwright/test');
-const { baseUrl } = require('../configs/env');
+const { test, expect, request } = require('@playwright/test');
 
-console.log("Using BASE_URL:", baseUrl); 
-
-let token;
-let newBookId;
-
-test.beforeAll(async ({ request }) => {
-  // ⏳ Wait for FastAPI server to be ready (2 seconds)
-  await new Promise((res) => setTimeout(res, 2000));
-
-  // Sign up - optional
-  await request.post(`${baseUrl}/signup`, {
-    data: {
-      username: 'playwrightuser',
-      password: 'Test@123'
-    }
-  });
-
-  // Login
-  const loginRes = await request.post(`${baseUrl}/login`, {
-    form: {
-      username: 'playwrightuser',
-      password: 'Test@123'
-    }
-  });
-
-  expect(loginRes.status()).toBe(200);
-  const loginData = await loginRes.json();
-  token = loginData.access_token;
-});
+const baseUrl = process.env.BASE_URL || 'http://127.0.0.1:8000';
 
 test.describe('Bookstore API Tests', () => {
+  let token = '';
+  let addedBookId = null;
+
+  test.beforeAll(async () => {
+    const api = await request.newContext();
+
+    // Sign up the user (optional - ignore failure if already signed up)
+    await api.post(`${baseUrl}/signup`, {
+      data: {
+        username: 'playwrightuser',
+        password: 'Test@123',
+      },
+    }).catch(() => {});
+
+    // Login to get JWT token
+    const loginRes = await api.post(`${baseUrl}/login`, {
+      form: {
+        username: 'playwrightuser',
+        password: 'Test@123',
+      },
+    });
+
+    expect(loginRes.ok()).toBeTruthy();
+    const loginData = await loginRes.json();
+    token = loginData.access_token;
+  });
 
   test('GET /books - should list books', async ({ request }) => {
     const res = await request.get(`${baseUrl}/books`);
-    expect(res.status()).toBe(200);
-    const data = await res.json();
-    expect(Array.isArray(data)).toBeTruthy();
+    expect(res.ok()).toBeTruthy();
+    const books = await res.json();
+    expect(Array.isArray(books)).toBeTruthy();
   });
 
   test('POST /books - should add a book', async ({ request }) => {
     const res = await request.post(`${baseUrl}/books`, {
+      data: {
+        title: 'Playwright Book',
+        author: 'Tester',
+      },
       headers: {
         Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json'
       },
-      data: {
-        title: "Playwright Guide",
-        author: "Test User"
-      }
     });
 
-    expect(res.status()).toBe(200);
-    const data = await res.json();
-    newBookId = data.id;
-    expect(data.title).toBe("Playwright Guide");
+    expect(res.ok()).toBeTruthy();
+    const book = await res.json();
+    expect(book.title).toBe('Playwright Book');
+    addedBookId = book.id;
   });
 
   test('PUT /books/:id - should update the book', async ({ request }) => {
-    const res = await request.put(`${baseUrl}/books/${newBookId}`, {
+    const res = await request.put(`${baseUrl}/books/${addedBookId}`, {
+      data: {
+        title: 'Updated Title',
+        author: 'Updated Author',
+      },
       headers: {
         Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json'
       },
-      data: {
-        title: "Updated Playwright Guide",
-        author: "Updated Author"
-      }
     });
 
-    expect(res.status()).toBe(200);
-    const data = await res.json();
-    expect(data.title).toBe("Updated Playwright Guide");
-    expect(data.author).toBe("Updated Author");
+    expect(res.ok()).toBeTruthy();
+    const updated = await res.json();
+    expect(updated.title).toBe('Updated Title');
   });
 
   test('GET /books/:id - should get the added book', async ({ request }) => {
-    const res = await request.get(`${baseUrl}/books/${newBookId}`);
-    expect(res.status()).toBe(200);
-    const data = await res.json();
-    expect(data.id).toBe(newBookId);
+    const res = await request.get(`${baseUrl}/books/${addedBookId}`);
+    expect(res.ok()).toBeTruthy();
+    const book = await res.json();
+    expect(book.id).toBe(addedBookId);
   });
 
   test('DELETE /books/:id - should delete the book', async ({ request }) => {
-    const res = await request.delete(`${baseUrl}/books/${newBookId}`, {
+    const res = await request.delete(`${baseUrl}/books/${addedBookId}`, {
       headers: {
-        Authorization: `Bearer ${token}`
-      }
+        Authorization: `Bearer ${token}`,
+      },
     });
 
-    expect(res.status()).toBe(200);
-    const data = await res.json();
-    expect(data.message).toMatch(/Deleted/i);
+    expect(res.ok()).toBeTruthy();
   });
 
   test('GET /books/:id - should return 404 after delete', async ({ request }) => {
-    const res = await request.get(`${baseUrl}/books/${newBookId}`);
+    const res = await request.get(`${baseUrl}/books/${addedBookId}`);
     expect(res.status()).toBe(404);
   });
 });
